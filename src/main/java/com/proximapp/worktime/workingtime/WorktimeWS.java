@@ -9,6 +9,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.sql.SQLException;
+import java.sql.Time;
+import java.sql.Timestamp;
+import java.text.SimpleDateFormat;
 import java.util.Date;
 
 @RestController
@@ -17,17 +20,41 @@ public class WorktimeWS {
 
 	private IAccessRepo accessRepo;
 
-	
+
 	@GetMapping("/registraEntrata")
 	public String registraEntrata(@RequestParam(value = "idUser", defaultValue= "1111") long idUser,
-								@RequestParam(value = "dataAccesso", defaultValue = "1994-12-12") String dataAccesso,
-								   @RequestParam(value = "entrata", defaultValue = "false") boolean entrata) throws SQLException {
+								@RequestParam(value = "dataAccesso", defaultValue = "1994-12-12 12:35:55") Timestamp dataAccesso,
+								   @RequestParam(value = "entrata", defaultValue = "false") boolean entrata) throws Exception {
 
 		initRepos();
-		accessRepo.addMovimento(idUser, dataAccesso, entrata);
+
+			if(dataAccesso.equals((Timestamp) dataAccesso)){
+				accessRepo.addMovimento(idUser, dataAccesso, entrata);
+			} else throw new Exception("Errore formato data");
 
 		return String.format("Operazione eseguita con successo.");
 	}
+
+	@GetMapping("/mostraMovimenti")
+	public String mostraMovimenti() throws Exception {
+
+		initRepos();
+
+
+		return String.format("Operazione eseguita con successo.");
+	}
+	@GetMapping("/mostraMovimenti/{data}")
+	public String movimentiByData(@RequestParam(value = "data", defaultValue = "1994-12-12") Date data) throws Exception {
+		initRepos();
+		return String.format("Operazione eseguita con successo.");
+	}
+
+	@GetMapping("/mostraMovimenti/{idUtente}")
+	public String movimentiById(@RequestParam(value = "idUser", defaultValue = "1111") long idUser) throws Exception {
+		initRepos();
+		return String.format("Operazione eseguita con successo.");
+	}
+
 
 
 	private void initRepos() throws SQLException {

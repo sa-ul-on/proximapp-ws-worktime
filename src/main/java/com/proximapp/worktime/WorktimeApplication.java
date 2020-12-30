@@ -10,7 +10,7 @@ import java.util.Date;
 
 @SpringBootApplication
 public class WorktimeApplication {
-    public static void main(String[] args) throws SQLException {
+    public static void main(String[] args) throws Exception {
         SpringApplication.run(WorktimeApplication.class, args);
         System.out.println("Main Running....");
 

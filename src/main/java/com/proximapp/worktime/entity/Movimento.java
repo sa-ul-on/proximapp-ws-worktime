@@ -1,9 +1,10 @@
 package com.proximapp.worktime.entity;
 
+import java.sql.Timestamp;
 import java.util.Date;
 
 public class Movimento {
-    private String dataEntrata;
+    private Timestamp dataEntrata;
     private long idUtente;
     private boolean entrata;
 
@@ -24,11 +25,11 @@ public class Movimento {
     }
 
 
-    public String getDataEntrata() {
+    public Timestamp getDataEntrata() {
         return dataEntrata;
     }
 
-    public void setDataEntrata(String dataEntrata) {
+    public void setDataEntrata(Timestamp dataEntrata) {
         this.dataEntrata = dataEntrata;
     }
 }
