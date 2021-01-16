@@ -20,9 +20,9 @@ public class WorktimeWS {
 	@CrossOrigin
 	@PostMapping("/worktimes/{companyId}")
 	public Worktime notifyWorktime(@PathVariable("companyId") long companyId,
-	                              @RequestParam(value = "userId") long userId,
-	                              @RequestParam(value = "date", defaultValue = "") String strDate,
-	                              @RequestParam(value = "inOrOut") boolean inOrOut) {
+	                               @RequestParam(value = "user_id") long userId,
+	                               @RequestParam(value = "date", defaultValue = "") String strDate,
+	                               @RequestParam(value = "in_or_out") boolean inOrOut) {
 		initRepos();
 		Date date;
 		if (strDate.isEmpty()) {
@@ -35,9 +35,10 @@ public class WorktimeWS {
 			}
 		}
 		if (inOrOut) {
+			// IN
 			Worktime lastWorktime = worktimeRepo.findLastUnclosedWorktimeByUser(companyId, userId);
 			if (lastWorktime != null) {
-				return null;
+				throw new IllegalStateException("Can't create new worktime if the last is still opened");
 			}
 			Worktime worktime = new Worktime();
 			worktime.setCompanyId(companyId);
@@ -46,23 +47,24 @@ public class WorktimeWS {
 			worktime.setDateTo(null);
 			worktime = worktimeRepo.createWorktime(worktime);
 			return worktime;
-		} else {// OUT
+		} else {
+			// OUT
 			Worktime lastWorktime = worktimeRepo.findLastUnclosedWorktimeByUser(companyId, userId);
-			if (lastWorktime != null) {
-				lastWorktime.setDateTo(date);
-				lastWorktime = worktimeRepo.updateWorktime(lastWorktime);
-				return lastWorktime;
+			if (lastWorktime == null) {
+				throw new IllegalStateException("Last worktime already closed");
 			}
-			return null;
+			lastWorktime.setDateTo(date);
+			lastWorktime = worktimeRepo.updateWorktime(lastWorktime);
+			return lastWorktime;
 		}
 	}
 
 	@CrossOrigin
 	@GetMapping("/worktimes/{companyId}/query")
 	public List<Worktime> findWorktimesByQuery(@PathVariable("companyId") long companyId,
-	                                           @RequestParam(value = "userIds") String strUserIds,
-	                                           @RequestParam(value = "dateFrom") String strDateFrom,
-	                                           @RequestParam(value = "dateTo", required = false) String strDateTo){
+	                                           @RequestParam(value = "user_ids", defaultValue = "") String strUserIds,
+	                                           @RequestParam(value = "date_from", defaultValue = "") String strDateFrom,
+	                                           @RequestParam(value = "date_to", defaultValue = "") String strDateTo) {
 		initRepos();
 		final String ID_LIST_REG_EXP = "((\\d+,)*\\d+|)";
 		if (!strUserIds.matches(ID_LIST_REG_EXP))
@@ -72,15 +74,16 @@ public class WorktimeWS {
 						.map(Long::parseLong)
 						.filter(possibleWorktimeId -> worktimeRepo.findWorktimeById(possibleWorktimeId) != null)
 						.collect(Collectors.toSet());
-		Date dateFrom, dateTo;
-		try {
-			dateFrom = DatetimeManager.parse(strDateFrom);
-		} catch (ParseException e) {
-			throw new IllegalStateException("Invalid dateFrom");
+		Date dateFrom = null;
+		Date dateTo = null;
+		if (!strDateFrom.isEmpty()) {
+			try {
+				dateFrom = DatetimeManager.parse(strDateFrom);
+			} catch (ParseException e) {
+				throw new IllegalStateException("Invalid dateFrom");
+			}
 		}
-		if (strDateTo == null || strDateTo.equals("") || strDateTo.isEmpty()) {
-			dateTo = new Date(System.currentTimeMillis());
-		} else {
+		if (!strDateTo.isEmpty()) {
 			try {
 				dateTo = DatetimeManager.parse(strDateTo);
 			} catch (ParseException e) {
@@ -92,7 +95,9 @@ public class WorktimeWS {
 
 	@CrossOrigin
 	@DeleteMapping("/worktimes/{companyId}/{worktimeId}")
-	public boolean deleteWorktime(@PathVariable("worktimeId") long worktimeId, @PathVariable("companyId") long companyId){
+	public boolean deleteWorktime(@PathVariable("worktimeId") long worktimeId,
+	                              @PathVariable("companyId") long companyId) {
+		initRepos();
 		Worktime worktime = worktimeRepo.findWorktimeById(worktimeId);
 		if (worktime == null || worktime.getCompanyId() != companyId) {
 			return false;
