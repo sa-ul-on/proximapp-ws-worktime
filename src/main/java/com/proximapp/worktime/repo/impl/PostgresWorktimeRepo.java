@@ -7,7 +7,10 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Timestamp;
-import java.util.*;
+import java.util.Date;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Set;
 
 public class PostgresWorktimeRepo implements IWorktimeRepo {
 
@@ -100,21 +103,27 @@ public class PostgresWorktimeRepo implements IWorktimeRepo {
 	}
 
 	@Override
-	public Worktime findLastUnclosedWorktimeByUser(long companyID, long userId) {
+	public Worktime getLastWorktimeByUser(long companyId, long userId) {
 		try {
 			PreparedStatement preparedStatement = connection.prepareStatement("SELECT worktimeid, companyid, " +
-					"userid, datefrom, dateto FROM worktime WHERE companyid = ? AND userid = ? AND dateto IS NULL");
-			preparedStatement.setLong(1, companyID);
+					"userid, datefrom, dateto FROM worktime WHERE companyid = ? AND userid = ? " +
+					"ORDER BY worktimeid DESC LIMIT 1");
+			preparedStatement.setLong(1, companyId);
 			preparedStatement.setLong(2, userId);
 			ResultSet resultSet = preparedStatement.executeQuery();
-			if (!resultSet.next())
+			if (resultSet.next()) {
+				Worktime worktime = new Worktime();
+				worktime.setId(resultSet.getLong(1));
+				worktime.setCompanyId(resultSet.getLong(2));
+				worktime.setUserId(resultSet.getLong(3));
+				worktime.setDateFrom(new Date(resultSet.getTimestamp(4).getTime()));
+				if (resultSet.getTimestamp(5) != null) {
+					worktime.setDateTo(new Date(resultSet.getTimestamp(5).getTime()));
+				}
+				return worktime;
+			} else {
 				return null;
-			Worktime worktime = new Worktime();
-			worktime.setId(resultSet.getLong(1));
-			worktime.setCompanyId(resultSet.getLong(2));
-			worktime.setUserId(resultSet.getLong(3));
-			worktime.setDateFrom(new Date(resultSet.getTimestamp(4).getTime()));
-			return worktime;
+			}
 		} catch (Exception e) {
 			return null;
 		}
@@ -141,7 +150,7 @@ public class PostgresWorktimeRepo implements IWorktimeRepo {
 			preparedStatement.setTimestamp(1, new Timestamp(worktime.getDateTo().getTime()));
 			preparedStatement.setLong(2, worktime.getId());
 			preparedStatement.executeUpdate();
-			return worktime;
+			return findWorktimeById(worktime.getId());
 		} catch (Exception e) {
 			return null;
 		}

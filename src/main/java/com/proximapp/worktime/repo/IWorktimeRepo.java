@@ -14,7 +14,7 @@ public interface IWorktimeRepo {
 
 	List<Worktime> findWorktimesByQuery(long companyID, Set<Long> userIds, Date dateFrom, Date dateTo);
 
-	Worktime findLastUnclosedWorktimeByUser(long companyID, long userId);
+	Worktime getLastWorktimeByUser(long companyID, long userId);
 
 	Worktime updateWorktime(Worktime worktime);
 
