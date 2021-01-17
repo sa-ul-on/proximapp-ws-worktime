@@ -36,8 +36,8 @@ public class WorktimeWS {
 		}
 		if (inOrOut) {
 			// IN
-			Worktime lastWorktime = worktimeRepo.findLastUnclosedWorktimeByUser(companyId, userId);
-			if (lastWorktime != null) {
+			Worktime lastWorktime = worktimeRepo.getLastWorktimeByUser(companyId, userId);
+			if (lastWorktime != null && lastWorktime.getDateTo() == null) {
 				throw new IllegalStateException("Can't create new worktime if the last is still opened");
 			}
 			Worktime worktime = new Worktime();
@@ -49,8 +49,8 @@ public class WorktimeWS {
 			return worktime;
 		} else {
 			// OUT
-			Worktime lastWorktime = worktimeRepo.findLastUnclosedWorktimeByUser(companyId, userId);
-			if (lastWorktime == null) {
+			Worktime lastWorktime = worktimeRepo.getLastWorktimeByUser(companyId, userId);
+			if (lastWorktime == null || lastWorktime.getDateTo() != null) {
 				throw new IllegalStateException("Last worktime already closed");
 			}
 			lastWorktime.setDateTo(date);
@@ -72,7 +72,6 @@ public class WorktimeWS {
 		Set<Long> userIds = strUserIds.isEmpty() ? new HashSet<>() :
 				Arrays.stream(strUserIds.split(","))
 						.map(Long::parseLong)
-						.filter(possibleWorktimeId -> worktimeRepo.findWorktimeById(possibleWorktimeId) != null)
 						.collect(Collectors.toSet());
 		Date dateFrom = null;
 		Date dateTo = null;

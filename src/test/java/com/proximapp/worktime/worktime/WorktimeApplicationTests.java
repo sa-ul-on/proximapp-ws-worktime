@@ -8,52 +8,65 @@ import org.springframework.boot.test.context.SpringBootTest;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.Date;
 
 @SpringBootTest
 class WorktimeApplicationTests {
 
 	@Test
 	void contextLoads() throws ParseException {
+		long companyId = 1;
 		WorktimeWS worktimeWS = new WorktimeWS();
-		Worktime worktime1, worktime2, worktimeTest;
-		worktimeWS.notifyWorktime(1, 1, "2021-01-09 16:28:22", true);
-		worktime1 = worktimeWS.notifyWorktime(1, 1, "2021-01-09 16:30:22", false);
-		worktimeWS.notifyWorktime(1, 1, "", true);
-		worktime2 = worktimeWS.notifyWorktime(1, 1, "", false);
+		Worktime worktimeTest, worktime1, worktime2, worktime3, worktime4;
+		worktime1 = new Worktime();
+		worktime2 = new Worktime();
+		worktime3 = new Worktime();
+		assert worktimeWS.notifyWorktime(companyId, 1, "2021-01-17 08:30:00", true) != null;
+		assert (worktime1 = worktimeWS.notifyWorktime(companyId, 1, "2021-01-17 13:30:00", false)) != null;
+		assert worktimeWS.notifyWorktime(companyId, 1, "2021-01-17 14:30:00", true) != null;
+		assert (worktime2 = worktimeWS.notifyWorktime(companyId, 1, "2021-01-17 17:30:00", false)) != null;
+		assert worktimeWS.notifyWorktime(companyId, 2, "", true) != null;
+		assert (worktime3 = worktimeWS.notifyWorktime(companyId, 2, "", false)) != null;
+
+		worktime4 = new Worktime();
+		try {
+			worktimeWS.notifyWorktime(companyId, 1, "2021-01-18 08:30:00", true);
+		} catch (IllegalStateException e) {
+			assert false;
+		}
+		try {
+			worktime4 = worktimeWS.notifyWorktime(companyId, 1, "2021-01-18 18:30:00", false);
+		} catch (IllegalStateException e) {
+			assert false;
+		}
+		try {
+			worktimeWS.notifyWorktime(companyId, 1, "2021-01-18 08:30:00", false);
+		} catch (IllegalStateException e) {
+			assert true;
+		}
+
 		worktimeTest = new Worktime();
-		worktimeTest.setId(worktime1.getId());
-		worktimeTest.setCompanyId(1);
+		worktimeTest.setId(worktime2.getId());
+		worktimeTest.setCompanyId(companyId);
 		worktimeTest.setUserId(1);
 		DateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-		worktimeTest.setDateFrom(format.parse("2021-01-09 16:28:22"));
-		worktimeTest.setDateTo(format.parse("2021-01-09 16:30:22"));
-		assert (worktime1.getId() == worktimeTest.getId()
-				&& worktime1.getCompanyId() == worktimeTest.getCompanyId()
-				&& worktime1.getUserId() == worktimeTest.getUserId()
-				&& worktime1.getDateFrom().equals(worktimeTest.getDateFrom())
-				&& worktime1.getDateTo().equals(worktimeTest.getDateTo()));
-		assert worktimeWS.notifyWorktime(1, 1, "", false) == null;
-		assert worktimeWS.findWorktimesByQuery(1,"1", "2021-01-08 16:28:22","").stream().filter(worktime -> {
-			if(worktime.getId() == worktime1.getId() &&
-					worktime.getCompanyId() == worktime1.getCompanyId() &&
-					worktime.getUserId() == worktime1.getUserId() &&
-					worktime.getDateFrom().equals(worktime1.getDateFrom()) &&
-					worktime.getDateTo().equals(worktime1.getDateTo())) {
-				return true;
-			}else if(worktime.getId() == worktime2.getId() &&
-					worktime.getCompanyId() == worktime2.getCompanyId() &&
-					worktime.getUserId() == worktime2.getUserId() &&
-					worktime.getDateFrom().equals(worktime2.getDateFrom()) &&
-					worktime.getDateTo().equals(worktime2.getDateTo())){
-				return true;
-			}else{
-				return false;
-			}
-		}).count() == 2;
-		assert worktimeWS.deleteWorktime(worktime1.getId(),worktime1.getCompanyId()) == true;
-		assert worktimeWS.deleteWorktime(worktime2.getId(),worktime2.getCompanyId()) == true;
-		assert worktimeWS.deleteWorktime(worktime2.getId(),2) == false;
-		assert worktimeWS.findWorktimesByQuery(1,"1","2021-01-08 16:28:22","").size() == 0;
+		worktimeTest.setDateFrom(format.parse("2021-01-17 14:30:00"));
+		worktimeTest.setDateTo(format.parse("2021-01-17 17:30:00"));
+		assert (worktime2.getCompanyId() == worktimeTest.getCompanyId()
+				&& worktime2.getCompanyId() == worktimeTest.getCompanyId()
+				&& worktime2.getUserId() == worktimeTest.getUserId()
+				&& worktime2.getDateFrom().equals(worktimeTest.getDateFrom())
+				&& worktime2.getDateTo().equals(worktimeTest.getDateTo()));
+
+		assert worktimeWS.findWorktimesByQuery(companyId, "1,2", "", "").size() == 4;
+		assert worktimeWS.findWorktimesByQuery(companyId, "2", "", "").size() == 1;
+		assert worktimeWS.findWorktimesByQuery(companyId, "1", "2021-01-09 16:28:22", "").size() == 3;
+		assert worktimeWS.findWorktimesByQuery(companyId, "1", "2021-01-17 00:00:00", "2021-01-17 23:59:59").size() == 2;
+
+		assert worktimeWS.deleteWorktime(worktime1.getId(), companyId) == true;
+		assert worktimeWS.deleteWorktime(worktime2.getId(), companyId) == true;
+		assert worktimeWS.deleteWorktime(worktime3.getId(), companyId) == true;
+		assert worktimeWS.deleteWorktime(worktime4.getId(), companyId) == true;
+		assert worktimeWS.deleteWorktime(worktime2.getId(), companyId) == false;
+		assert worktimeWS.findWorktimesByQuery(companyId, "", "", "").size() == 0;
 	}
 }
