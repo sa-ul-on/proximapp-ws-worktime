@@ -74,6 +74,7 @@ public class PostgresWorktimeRepo implements IWorktimeRepo {
 				findWorktimesByQuery += " AND dateto <= ?";
 			if (userIds != null && userIds.size() > 0)
 				findWorktimesByQuery += " AND userid IN (?" + ", ?".repeat(userIds.size() - 1) + ")";
+			findWorktimesByQuery += " ORDER BY datefrom DESC";
 			PreparedStatement preparedStatement = connection.prepareStatement(findWorktimesByQuery);
 			int i = 1;
 			preparedStatement.setLong(i++, companyId);
